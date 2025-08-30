@@ -1,0 +1,51 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <circle cx="512" cy="512" r="512" fill="#000000"/>
+  
+  <!-- Camera lens outer ring -->
+  <circle cx="512" cy="512" r="400" fill="none" stroke="#FFFFFF" stroke-width="24" opacity="0.9"/>
+  
+  <!-- Camera lens inner elements -->
+  <circle cx="512" cy="512" r="320" fill="#0A9396" opacity="0.7"/>
+  <circle cx="512" cy="512" r="280" fill="#005F73" opacity="0.9"/>
+  
+  <!-- Artifact surface with inscription -->
+  <circle cx="512" cy="512" r="220" fill="#E9D8A6" opacity="0.9"/>
+  
+  <!-- Ancient inscription symbols -->
+  <g transform="translate(512, 512) scale(0.9)">
+    <!-- Horizontal lines representing text -->
+    <rect x="-120" y="-80" width="240" height="12" rx="6" fill="#9B2226" opacity="0.9"/>
+    <rect x="-100" y="-40" width="200" height="12" rx="6" fill="#9B2226" opacity="0.8"/>
+    <rect x="-110" y="0" width="220" height="12" rx="6" fill="#9B2226" opacity="0.9"/>
+    <rect x="-90" y="40" width="180" height="12" rx="6" fill="#9B2226" opacity="0.8"/>
+    <rect x="-120" y="80" width="240" height="12" rx="6" fill="#9B2226" opacity="0.9"/>
+    
+    <!-- Some ancient symbols -->
+    <circle cx="-70" cy="-60" r="14" stroke="#9B2226" stroke-width="8" fill="none"/>
+    <circle cx="70" cy="60" r="14" stroke="#9B2226" stroke-width="8" fill="none"/>
+  </g>
+  
+  <!-- Light beams representing reflectivity detection -->
+  <!-- Incoming light beam -->
+  <path d="M200,200 L512,512" stroke="#EE9B00" stroke-width="30" stroke-linecap="round" opacity="0.8"/>
+  
+  <!-- Reflected light beam -->
+  <path d="M512,512 L824,200" stroke="#CA6702" stroke-width="30" stroke-linecap="round" opacity="0.8"/>
+  
+  <!-- Second incoming light beam -->
+  <path d="M200,824 L512,512" stroke="#EE9B00" stroke-width="30" stroke-linecap="round" opacity="0.8"/>
+  
+  <!-- Second reflected light beam -->
+  <path d="M512,512 L824,824" stroke="#CA6702" stroke-width="30" stroke-linecap="round" opacity="0.8"/>
+  
+  <!-- Camera filter elements (inspired by system icon) -->
+  <circle cx="512" cy="512" r="120" fill="none" stroke="#FFFFFF" stroke-width="16" opacity="0.8"/>
+  <circle cx="512" cy="512" r="60" fill="none" stroke="#FFFFFF" stroke-width="12" opacity="0.9"/>
+  
+  <!-- AR frame corners -->
+  <path d="M200,200 L300,200 M200,200 L200,300" stroke="#FFFFFF" stroke-width="15" fill="none"/>
+  <path d="M824,200 L724,200 M824,200 L824,300" stroke="#FFFFFF" stroke-width="15" fill="none"/>
+  <path d="M200,824 L300,824 M200,824 L200,724" stroke="#FFFFFF" stroke-width="15" fill="none"/>
+  <path d="M824,824 L724,824 M824,824 L824,724" stroke="#FFFFFF" stroke-width="15" fill="none"/>
+</svg>
