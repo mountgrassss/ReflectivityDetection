@@ -72,7 +72,20 @@ struct ContentView: View {
                         MetricRow(label: "Specular", value: viewModel.specularScore)
                         MetricRow(label: "Diffuse", value: viewModel.diffuseScore)
                         MetricRow(label: "Brightness", value: viewModel.averageBrightness)
-                        MetricRow(label: "Variance", value: viewModel.brightnessVariance)
+                        
+                        // Variance with threshold indicator
+                        HStack {
+                            MetricRow(label: "Variance", value: viewModel.brightnessVariance)
+                            
+                            // Show indicator when variance exceeds threshold
+                            if viewModel.brightnessVariance > viewModel.varianceThreshold {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundColor(.yellow)
+                                    .font(.caption)
+                            }
+                        }
+                        
+                        MetricRow(label: "Var Threshold", value: viewModel.varianceThreshold)
                     }
                     
                     // Description of detected surface

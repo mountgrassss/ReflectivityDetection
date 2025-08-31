@@ -47,6 +47,7 @@ struct ReflectivityMetrics {
     var diffuseScore: Float = 0.0
     var brightnessVariance: Float = 0.0
     var averageBrightness: Float = 0.0
+    var varianceThreshold: Float = 0.0
     var surfaceType: SurfaceType = .unknown
     
     var description: String {
@@ -55,6 +56,7 @@ struct ReflectivityMetrics {
         Specular Score: \(String(format: "%.2f", specularScore))
         Diffuse Score: \(String(format: "%.2f", diffuseScore))
         Brightness Variance: \(String(format: "%.2f", brightnessVariance))
+        Variance Threshold: \(String(format: "%.2f", varianceThreshold))
         Average Brightness: \(String(format: "%.2f", averageBrightness))
         """
     }

@@ -338,9 +338,16 @@ class ReflectivityViewController: UIViewController, ARSessionDelegate {
             let metrics = analyzer.analyzeFrame(ciImage)
             let analyzerDuration = CACurrentMediaTime() - beforeAnalyzer
             
+            // Get the variance threshold for the current mode
+            let varianceThreshold = getModeSpecificVarianceThreshold()
+            
+            // Add variance threshold to metrics
+            var metricsWithThreshold = metrics
+            metricsWithThreshold.varianceThreshold = varianceThreshold
+            
             // Highlight reflective areas if enabled
             if shouldShowHighlights {
-                highlightReflectiveAreas(metrics: metrics)
+                highlightReflectiveAreas(metrics: metricsWithThreshold)
             } else if let highlightNode = highlightNode {
                 // Remove highlights if they exist but should not be shown
                 DispatchQueue.main.async {
@@ -352,8 +359,8 @@ class ReflectivityViewController: UIViewController, ARSessionDelegate {
             // Publish metrics to SwiftUI on main thread
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
-                self.metricsPublisher.send(metrics)
-                self.updateDebugInfo(with: metrics)
+                self.metricsPublisher.send(metricsWithThreshold)
+                self.updateDebugInfo(with: metricsWithThreshold)
             }
             
             // DEBUG: Log total processing time with detailed breakdown
@@ -522,11 +529,27 @@ class ReflectivityViewController: UIViewController, ARSessionDelegate {
         highlightNode?.removeFromParentNode()
         
         // Only highlight if we have significant reflectivity
-        let reflectivityThreshold: Float = 0.05 * Float(highlightIntensity)
-        guard metrics.specularScore > reflectivityThreshold ||
-              (metrics.surfaceType == .shiny && metrics.brightnessVariance > 0.01) else {
-            return
-        }
+        // Use mode-specific threshold that matches the analyzer's thresholds
+        let reflectivityThreshold: Float = getModeSpecificThreshold() * Float(highlightIntensity)
+        
+        // Get the variance threshold (same as what we're displaying in the UI)
+        let varianceThreshold: Float = metrics.varianceThreshold > 0 ?
+                                      metrics.varianceThreshold :
+                                      getModeSpecificVarianceThreshold()
+        
+//        print("""
+//        DEBUG: highlight reflective area:
+//          metrics.specularScore = \(metrics.specularScore),
+//          reflectivityThreshold = \(reflectivityThreshold),
+//          highlightIntensity = \(highlightIntensity),
+//          metrics.brightnessVariance = \(metrics.brightnessVariance),
+//          varianceThreshold = \(varianceThreshold)
+//        """)
+        
+         guard metrics.specularScore > reflectivityThreshold ||
+               (metrics.surfaceType == .shiny && metrics.brightnessVariance > varianceThreshold) else {
+             return
+         }
         
         // Create a semi-transparent overlay to highlight reflective areas
         let highlightGeometry = SCNPlane(width: 0.2, height: 0.2)
@@ -538,18 +561,22 @@ class ReflectivityViewController: UIViewController, ARSessionDelegate {
         
         switch metrics.surfaceType {
         case .shiny:
-            color = UIColor.blue
-            // Higher specular score = more opaque highlight
-            alpha = CGFloat(min(0.4, metrics.specularScore * 2.0)) * CGFloat(highlightIntensity)
-        case .matte:
             color = UIColor.green
-            // Higher diffuse score = more opaque highlight
-            alpha = CGFloat(min(0.3, metrics.diffuseScore * 1.5)) * CGFloat(highlightIntensity)
+            // Higher specular score = more opaque highlight, with a minimum value to ensure visibility
+            let minAlpha: CGFloat = 0.3
+            alpha = max(minAlpha, CGFloat(min(0.4, metrics.specularScore * 2.0))) * CGFloat(highlightIntensity)
+        case .matte:
+            color = UIColor.blue
+            // Higher diffuse score = more opaque highlight, with a minimum value to ensure visibility
+            let minAlpha: CGFloat = 0.12
+            alpha = max(minAlpha, CGFloat(min(0.3, metrics.diffuseScore * 1.5))) * CGFloat(highlightIntensity)
         case .unknown:
             color = UIColor.yellow
-            alpha = CGFloat(0.2) * CGFloat(highlightIntensity)
+            // Ensure minimum visibility for unknown surface types
+            let minAlpha: CGFloat = 0.1
+            alpha = max(minAlpha, CGFloat(0.2)) * CGFloat(highlightIntensity)
         }
-        
+
         material.diffuse.contents = color.withAlphaComponent(alpha)
         material.transparency = 0.7
         material.blendMode = .add
@@ -610,6 +637,34 @@ class ReflectivityViewController: UIViewController, ARSessionDelegate {
             
             // Pass the detection mode to the analyzer
             analyzer.setDetectionMode(mode)
+        }
+    }
+    
+    /// Returns the appropriate reflectivity threshold based on the current detection mode
+    private func getModeSpecificThreshold() -> Float {
+        switch detectionMode {
+        case 0: // Standard mode
+            return 0.05
+        case 1: // High Sensitivity mode
+            return 0.03 // Lower threshold for higher sensitivity
+        case 2: // Archaeological mode
+            return 0.07 // Higher threshold for archaeological artifacts
+        default:
+            return 0.05
+        }
+    }
+    
+    /// Returns the appropriate variance threshold based on the current detection mode
+    private func getModeSpecificVarianceThreshold() -> Float {
+        switch detectionMode {
+        case 0: // Standard mode
+            return 0.01
+        case 1: // High Sensitivity mode
+            return 0.008 // Lower threshold for higher sensitivity
+        case 2: // Archaeological mode
+            return 0.015 // Higher threshold for archaeological artifacts
+        default:
+            return 0.01
         }
     }
 }

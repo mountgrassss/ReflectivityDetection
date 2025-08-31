@@ -10,6 +10,7 @@ class ReflectivityViewModel: ObservableObject {
     @Published var diffuseScore: Float = 0.0
     @Published var brightnessVariance: Float = 0.0
     @Published var averageBrightness: Float = 0.0
+    @Published var varianceThreshold: Float = 0.0
     
     // Debug metrics for AR buffer monitoring
     @Published var bufferMetrics = ARBufferMetrics()
@@ -109,6 +110,7 @@ class ReflectivityViewModel: ObservableObject {
         diffuseScore = metrics.diffuseScore
         brightnessVariance = metrics.brightnessVariance
         averageBrightness = metrics.averageBrightness
+        varianceThreshold = metrics.varianceThreshold
     }
     
     /// Collects metrics during calibration phase
