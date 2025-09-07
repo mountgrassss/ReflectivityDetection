@@ -413,7 +413,7 @@ struct CalibrationOverlayView: View {
             Color.black.opacity(0.7)
                 .edgesIgnoringSafeArea(.all)
             
-            VStack(spacing: 30) {
+            VStack(spacing: 25) {
                 Text("Calibration Required")
                     .font(.title)
                     .fontWeight(.bold)
@@ -426,6 +426,43 @@ struct CalibrationOverlayView: View {
                 }
                 .padding()
                 .background(Color.black.opacity(0.5))
+                .cornerRadius(10)
+                
+                // Calibration Progress Section
+                VStack(spacing: 10) {
+                    // Progress Text
+                    Text("Collecting calibration samples...")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    
+                    // Sample Count Text
+                    Text("\(viewModel.calibrationSamplesCollected)/\(10) samples collected")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.9))
+                    
+                    // Progress Bar
+                    GeometryReader { geometry in
+                        ZStack(alignment: .leading) {
+                            // Background
+                            Rectangle()
+                                .frame(width: geometry.size.width, height: 8)
+                                .opacity(0.3)
+                                .foregroundColor(.gray)
+                                .cornerRadius(4)
+                            
+                            // Progress
+                            Rectangle()
+                                .frame(width: min(CGFloat(viewModel.calibrationProgress) * geometry.size.width, geometry.size.width), height: 8)
+                                .foregroundColor(.blue)
+                                .cornerRadius(4)
+                                .animation(.easeInOut(duration: 0.3), value: viewModel.calibrationProgress)
+                        }
+                    }
+                    .frame(height: 8)
+                    .padding(.horizontal)
+                }
+                .padding()
+                .background(Color.black.opacity(0.4))
                 .cornerRadius(10)
                 
                 Button(action: {
@@ -442,6 +479,8 @@ struct CalibrationOverlayView: View {
                         .cornerRadius(10)
                 }
                 .padding(.horizontal)
+                .opacity(viewModel.calibrationProgress >= 1.0 ? 1.0 : 0.6)
+                .disabled(viewModel.calibrationProgress < 1.0)
             }
             .padding()
         }

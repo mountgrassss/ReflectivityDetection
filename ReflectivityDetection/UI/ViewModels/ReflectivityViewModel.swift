@@ -21,6 +21,8 @@ class ReflectivityViewModel: ObservableObject {
     @Published var calibrationCompleted: Bool = false
     @Published var showRecalibrationPrompt: Bool = false
     @Published var showCalibrationCompletedFeedback: Bool = false
+    @Published var calibrationProgress: Float = 0.0
+    @Published var calibrationSamplesCollected: Int = 0
     
     // Settings properties
     @Published var enhancedDetection: Bool = true
@@ -172,7 +174,12 @@ class ReflectivityViewModel: ObservableObject {
     /// Collects metrics during calibration phase
     private func collectCalibrationMetrics(_ metrics: ReflectivityMetrics) {
         calibrationMetrics.append(metrics)
-        print("Collected calibration sample \(calibrationMetrics.count)/\(requiredCalibrationSamples)")
+        
+        // Update calibration progress
+        calibrationSamplesCollected = calibrationMetrics.count
+        calibrationProgress = Float(calibrationMetrics.count) / Float(requiredCalibrationSamples)
+        
+        print("Collected calibration sample \(calibrationMetrics.count)/\(requiredCalibrationSamples) - Progress: \(Int(calibrationProgress * 100))%")
         
         // Auto-complete calibration when we have enough samples
         if calibrationMetrics.count >= requiredCalibrationSamples {
@@ -279,8 +286,10 @@ class ReflectivityViewModel: ObservableObject {
         // Dismiss the recalibration prompt
         showRecalibrationPrompt = false
         
-        // Clear existing calibration metrics
+        // Clear existing calibration metrics and reset progress
         calibrationMetrics.removeAll()
+        calibrationProgress = 0.0
+        calibrationSamplesCollected = 0
         
         print("Recalibration started")
     }
