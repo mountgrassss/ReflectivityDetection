@@ -19,6 +19,8 @@ class ReflectivityViewModel: ObservableObject {
     // Calibration state properties
     @Published var isCalibrating: Bool = false
     @Published var calibrationCompleted: Bool = false
+    @Published var showRecalibrationPrompt: Bool = false
+    @Published var showCalibrationCompletedFeedback: Bool = false
     
     // Settings properties
     @Published var enhancedDetection: Bool = true
@@ -32,6 +34,15 @@ class ReflectivityViewModel: ObservableObject {
     private var calibrationMetrics: [ReflectivityMetrics] = []
     private let requiredCalibrationSamples = 10
     
+    // Environment change detection
+    private var baselineSpecularScore: Float = 0.0
+    private var baselineDiffuseScore: Float = 0.0
+    private var baselineBrightnessVariance: Float = 0.0
+    private var baselineAverageBrightness: Float = 0.0
+    private var environmentCheckCounter: Int = 0
+    private let environmentCheckFrequency: Int = 30 // Check every 30 frames
+    private let environmentChangeThreshold: Float = 0.3 // 30% change triggers recalibration prompt
+    
     // Publishers to receive updates from AR controller
     let metricsPublisher = PassthroughSubject<ReflectivityMetrics, Never>()
     let bufferMetricsPublisher = PassthroughSubject<ARBufferMetrics, Never>()
@@ -43,8 +54,9 @@ class ReflectivityViewModel: ObservableObject {
         calibrationCompleted = defaults.bool(forKey: "ReflectivityDetection.hasBeenCalibrated")
         isCalibrating = !calibrationCompleted
         
-        // Load settings from UserDefaults
+        // Load settings and baseline values from UserDefaults
         loadSettings()
+        loadBaselineValues()
         
         // Subscribe to metrics updates
         metricsPublisher
@@ -101,6 +113,18 @@ class ReflectivityViewModel: ObservableObject {
         print("Settings updated - Highlights: \(highlightReflectiveAreas), Sensitivity: \(sensitivityThreshold)")
     }
     
+    /// Loads baseline values from UserDefaults
+    private func loadBaselineValues() {
+        let defaults = UserDefaults.standard
+        
+        baselineSpecularScore = defaults.float(forKey: "ReflectivityDetection.baselineSpecularScore", defaultValue: 0.0)
+        baselineDiffuseScore = defaults.float(forKey: "ReflectivityDetection.baselineDiffuseScore", defaultValue: 0.0)
+        baselineBrightnessVariance = defaults.float(forKey: "ReflectivityDetection.baselineBrightnessVariance", defaultValue: 0.01)
+        baselineAverageBrightness = defaults.float(forKey: "ReflectivityDetection.baselineAverageBrightness", defaultValue: 0.5)
+        
+        print("Loaded baseline values - Specular: \(baselineSpecularScore), Diffuse: \(baselineDiffuseScore), Variance: \(baselineBrightnessVariance)")
+    }
+    
     private func updateFromMetrics(_ metrics: ReflectivityMetrics) {
         // Update all the published properties
         surfaceType = metrics.surfaceType.rawValue
@@ -111,6 +135,38 @@ class ReflectivityViewModel: ObservableObject {
         brightnessVariance = metrics.brightnessVariance
         averageBrightness = metrics.averageBrightness
         varianceThreshold = metrics.varianceThreshold
+        
+        // Check for environmental changes periodically
+        if calibrationCompleted && !isCalibrating {
+            environmentCheckCounter += 1
+            if environmentCheckCounter >= environmentCheckFrequency {
+                checkForEnvironmentalChanges(metrics)
+                environmentCheckCounter = 0
+            }
+        }
+    }
+    
+    /// Checks if the current environment differs significantly from the calibrated environment
+    private func checkForEnvironmentalChanges(_ metrics: ReflectivityMetrics) {
+        // Skip if we don't have baseline values
+        guard baselineSpecularScore > 0 || baselineDiffuseScore > 0 || baselineBrightnessVariance > 0 else {
+            return
+        }
+        
+        // Calculate percentage changes from baseline
+        let specularChange = abs(metrics.specularScore - baselineSpecularScore) / max(0.01, baselineSpecularScore)
+        let diffuseChange = abs(metrics.diffuseScore - baselineDiffuseScore) / max(0.01, baselineDiffuseScore)
+        let varianceChange = abs(metrics.brightnessVariance - baselineBrightnessVariance) / max(0.01, baselineBrightnessVariance)
+        let brightnessChange = abs(metrics.averageBrightness - baselineAverageBrightness) / max(0.01, baselineAverageBrightness)
+        
+        // Calculate overall change (weighted average)
+        let overallChange = (specularChange * 0.3 + diffuseChange * 0.3 + varianceChange * 0.2 + brightnessChange * 0.2)
+        
+        // If significant change detected, show recalibration prompt
+        if overallChange > environmentChangeThreshold {
+            print("Significant environment change detected: \(String(format: "%.2f", overallChange * 100))% change")
+            showRecalibrationPrompt = true
+        }
     }
     
     /// Collects metrics during calibration phase
@@ -166,6 +222,21 @@ class ReflectivityViewModel: ObservableObject {
         // Update state variables
         isCalibrating = false
         calibrationCompleted = true
+        showRecalibrationPrompt = false
+        
+        // Show calibration completed feedback
+        showCalibrationCompletedFeedback = true
+        
+        // Automatically hide the feedback after 3 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) { [weak self] in
+            self?.showCalibrationCompletedFeedback = false
+        }
+        
+        // Update local baseline values
+        baselineSpecularScore = avgSpecularScore
+        baselineDiffuseScore = avgDiffuseScore
+        baselineBrightnessVariance = avgBrightnessVariance
+        baselineAverageBrightness = avgBrightness
         
         // Clear calibration metrics to free memory
         calibrationMetrics.removeAll()
@@ -198,6 +269,21 @@ class ReflectivityViewModel: ObservableObject {
             return 1.0 // Keep default threshold
         }
     }
+    
+    /// Starts the recalibration process when the environment changes
+    func startRecalibration() {
+        // Reset calibration state
+        isCalibrating = true
+        calibrationCompleted = false
+        
+        // Dismiss the recalibration prompt
+        showRecalibrationPrompt = false
+        
+        // Clear existing calibration metrics
+        calibrationMetrics.removeAll()
+        
+        print("Recalibration started")
+    }
 }
 
 // MARK: - UserDefaults Extension
@@ -212,5 +298,9 @@ extension UserDefaults {
     
     func double(forKey key: String, defaultValue: Double) -> Double {
         return object(forKey: key) == nil ? defaultValue : double(forKey: key)
+    }
+    
+    func float(forKey key: String, defaultValue: Float = 0.0) -> Float {
+        return object(forKey: key) == nil ? defaultValue : float(forKey: key)
     }
 }

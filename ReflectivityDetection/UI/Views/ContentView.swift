@@ -195,6 +195,20 @@ struct ContentView: View {
                     .transition(.opacity)
                     .animation(.easeInOut, value: viewModel.isCalibrating)
             }
+            
+            // Recalibration prompt overlay
+            if viewModel.showRecalibrationPrompt {
+                RecalibrationPromptView(viewModel: viewModel)
+                    .transition(.opacity)
+                    .animation(.easeInOut, value: viewModel.showRecalibrationPrompt)
+            }
+            
+            // Calibration completed feedback toast
+            if viewModel.showCalibrationCompletedFeedback {
+                CalibrationCompletedView()
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .animation(.easeInOut, value: viewModel.showCalibrationCompletedFeedback)
+            }
         }
         .statusBar(hidden: true)
         .onAppear {
@@ -367,6 +381,15 @@ struct SettingsView: View {
                     .onChange(of: viewModel.sensitivityThreshold) { _ in viewModel.saveSettings() }
                 }
                 
+                Section(header: Text("Calibration")) {
+                    Button("Recalibrate System") {
+                        viewModel.startRecalibration()
+                        isShowing = false // Dismiss settings view when recalibration starts
+                    }
+                    .foregroundColor(.blue)
+                    .padding(.vertical, 5)
+                }
+                
                 Section(header: Text("About")) {
                     Text("Reflectivity Detection App v1.0")
                         .font(.caption)
@@ -406,7 +429,9 @@ struct CalibrationOverlayView: View {
                 .cornerRadius(10)
                 
                 Button(action: {
-                    viewModel.completeCalibration()
+                    withAnimation {
+                        viewModel.completeCalibration()
+                    }
                 }) {
                     Text("Complete Calibration")
                         .font(.headline)
@@ -443,6 +468,97 @@ struct InstructionRow: View {
                 .font(.body)
                 .foregroundColor(.white)
                 .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+// MARK: - Recalibration Prompt View
+struct RecalibrationPromptView: View {
+    @ObservedObject var viewModel: ReflectivityViewModel
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.7)
+                .edgesIgnoringSafeArea(.all)
+            
+            VStack(spacing: 20) {
+                Text("Environment Change Detected")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                
+                Text("The lighting or surface conditions have changed significantly. Recalibration is recommended for optimal detection.")
+                    .font(.body)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                
+                HStack(spacing: 20) {
+                    Button(action: {
+                        viewModel.showRecalibrationPrompt = false
+                    }) {
+                        Text("Continue")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.gray)
+                            .cornerRadius(10)
+                    }
+                    
+                    Button(action: {
+                        viewModel.startRecalibration()
+                    }) {
+                        Text("Recalibrate")
+                            .font(.headline)
+                            .foregroundColor(.black)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.white)
+                            .cornerRadius(10)
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .padding()
+            .background(Color.black.opacity(0.8))
+            .cornerRadius(15)
+            .padding()
+        }
+    }
+}
+
+// MARK: - Calibration Completed Feedback View
+struct CalibrationCompletedView: View {
+    var body: some View {
+        VStack {
+            HStack(spacing: 15) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(.green)
+                
+                Text("Calibration Completed Successfully")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                
+                Spacer()
+            }
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.black.opacity(0.8))
+                    .shadow(color: Color.black.opacity(0.3), radius: 5, x: 0, y: 2)
+            )
+        }
+        .padding(.horizontal)
+        .padding(.bottom, 120) // Position from bottom of screen to avoid metrics window
+        .frame(maxHeight: .infinity, alignment: .bottom) // Position at bottom of screen
+        .transition(.move(edge: .bottom)) // Change transition to come from bottom
+        .zIndex(100) // Ensure it appears above other UI elements
+        // Add a subtle animation
+        .onAppear {
+            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+            impactFeedback.impactOccurred()
         }
     }
 }

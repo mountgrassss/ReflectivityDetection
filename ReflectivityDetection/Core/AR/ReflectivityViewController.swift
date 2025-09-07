@@ -183,8 +183,7 @@ class ReflectivityViewController: UIViewController, ARSessionDelegate {
     private func checkIfCalibrationNeeded() -> Bool {
         // Check if the app has been calibrated before
         let defaults = UserDefaults.standard
-        // let hasBeenCalibrated = defaults.bool(forKey: "ReflectivityDetection.hasBeenCalibrated")
-        let hasBeenCalibrated = false
+        let hasBeenCalibrated = defaults.bool(forKey: "ReflectivityDetection.hasBeenCalibrated")
         print("Checking if calibration needed. hasBeenCalibrated = \(hasBeenCalibrated)")
         return !hasBeenCalibrated
     }
