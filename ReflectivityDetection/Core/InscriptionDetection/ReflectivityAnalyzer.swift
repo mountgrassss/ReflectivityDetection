@@ -91,6 +91,9 @@ class ReflectivityAnalyzer {
             specularThreshold = 0.85 * specularThresholdAdjustment
             diffuseThreshold = 0.65 * diffuseThresholdAdjustment // Higher threshold for ancient materials
         }
+        
+        // Print current threshold values after they've been updated
+        printCurrentThresholds()
     }
     
     /// Loads calibration values from UserDefaults if available
@@ -118,6 +121,9 @@ class ReflectivityAnalyzer {
         } else {
             print("No calibration values found, using defaults")
         }
+        
+        // Print current threshold values after loading calibration
+        printCurrentThresholds()
     }
     
     /// Analyze a frame to detect reflectivity characteristics
@@ -500,6 +506,11 @@ class ReflectivityAnalyzer {
         let adjustedDiffuseThreshold = diffuseThreshold
         let specularScoreThreshold = getSpecularScoreThreshold()
         
+        print("🔍 stableSpecularScore: \(stableSpecularScore)")
+        print("🔍 Specular Score Threshold: \(specularScoreThreshold)")
+        print("🔍 metrics.brightnessVariance: \(metrics.brightnessVariance)")
+        print("🔍 Variance Threshold: \(adjustedVarianceThreshold)")
+
         // Classification logic with calibration-adjusted thresholds
         if stableSpecularScore > specularScoreThreshold &&
            metrics.brightnessVariance > adjustedVarianceThreshold {
@@ -513,7 +524,8 @@ class ReflectivityAnalyzer {
     
     /// Get the appropriate variance threshold for surface classification based on detection mode
     private func getVarianceThreshold() -> Float {
-        let baseThreshold = max(0.01, brightnessVarianceBaseline)
+        // let baseThreshold = max(0.01, brightnessVarianceBaseline)
+        let baseThreshold = min(0.01, brightnessVarianceBaseline)
         
         switch detectionMode {
         case .standard:
@@ -560,6 +572,20 @@ class ReflectivityAnalyzer {
         case .archaeological:
             return 0.4 // Less smoothing for archaeological artifacts
         }
+    }
+    
+    /// Print the current threshold values to the console
+    private func printCurrentThresholds() {
+        print("🔍 CURRENT THRESHOLDS - Mode: \(detectionMode)")
+        print("🔍 Specular Threshold: \(specularThreshold)")
+        print("🔍 Diffuse Threshold: \(diffuseThreshold)")
+        print("🔍 Specular Score Threshold: \(getSpecularScoreThreshold())")
+        print("🔍 Variance Threshold: \(getVarianceThreshold())")
+    }
+    
+    /// Public method to print current thresholds (can be called from outside)
+    func debugPrintThresholds() {
+        printCurrentThresholds()
     }
 }
 

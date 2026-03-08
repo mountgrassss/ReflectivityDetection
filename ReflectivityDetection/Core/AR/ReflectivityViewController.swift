@@ -36,6 +36,10 @@ class ReflectivityViewController: UIViewController, ARSessionDelegate {
         return analyzer
     }()
     
+    // For threshold debugging
+    private var lastThresholdPrintTime: TimeInterval = 0
+    private let thresholdPrintInterval: TimeInterval = 5.0 // Print thresholds every 5 seconds
+    
     // For publishing metrics to SwiftUI
     var metricsPublisher = PassthroughSubject<ReflectivityMetrics, Never>()
     var bufferMetricsPublisher = PassthroughSubject<ARBufferMetrics, Never>()
@@ -149,6 +153,8 @@ class ReflectivityViewController: UIViewController, ARSessionDelegate {
         // If calibration was completed previously, ensure analyzer has loaded calibration values
         if !needsCalibration {
             analyzer.loadCalibrationValues()
+            // Print current threshold values when starting the AR session
+            // analyzer.debugPrintThresholds()
         }
         
         // Run the session with appropriate options
@@ -360,6 +366,14 @@ class ReflectivityViewController: UIViewController, ARSessionDelegate {
                 guard let self = self else { return }
                 self.metricsPublisher.send(metricsWithThreshold)
                 self.updateDebugInfo(with: metricsWithThreshold)
+                
+                // Print thresholds periodically during processing
+                let currentTime = CACurrentMediaTime()
+                if currentTime - self.lastThresholdPrintTime >= self.thresholdPrintInterval {
+                    self.lastThresholdPrintTime = currentTime
+                    // print("🔍 PERIODIC THRESHOLD CHECK:")
+                    // self.analyzer.debugPrintThresholds()
+                }
             }
             
             // DEBUG: Log total processing time with detailed breakdown
@@ -545,6 +559,11 @@ class ReflectivityViewController: UIViewController, ARSessionDelegate {
 //          varianceThreshold = \(varianceThreshold)
 //        """)
         
+        // print("🔍 CURRENT specularScore: \(metrics.specularScore)")
+        // print("🔍 CURRENT reflectivityThreshold: \(reflectivityThreshold)")
+        // print("🔍 CURRENT brightnessVariance: \(metrics.brightnessVariance)")
+        // print("🔍 CURRENT varianceThreshold: \(varianceThreshold)")
+
          guard metrics.specularScore > reflectivityThreshold ||
                (metrics.surfaceType == .shiny && metrics.brightnessVariance > varianceThreshold) else {
              return
@@ -562,7 +581,7 @@ class ReflectivityViewController: UIViewController, ARSessionDelegate {
         case .shiny:
             color = UIColor.green
             // Higher specular score = more opaque highlight, with a minimum value to ensure visibility
-            let minAlpha: CGFloat = 0.3
+            let minAlpha: CGFloat = 0.5
             alpha = max(minAlpha, CGFloat(min(0.4, metrics.specularScore * 2.0))) * CGFloat(highlightIntensity)
         case .matte:
             color = UIColor.blue
@@ -636,6 +655,9 @@ class ReflectivityViewController: UIViewController, ARSessionDelegate {
             
             // Pass the detection mode to the analyzer
             analyzer.setDetectionMode(mode)
+            
+            // Print current threshold values after detection mode change
+            analyzer.debugPrintThresholds()
         }
     }
     

@@ -42,8 +42,8 @@ class ReflectivityViewModel: ObservableObject {
     private var baselineBrightnessVariance: Float = 0.0
     private var baselineAverageBrightness: Float = 0.0
     private var environmentCheckCounter: Int = 0
-    private let environmentCheckFrequency: Int = 30 // Check every 30 frames
-    private let environmentChangeThreshold: Float = 0.3 // 30% change triggers recalibration prompt
+    private let environmentCheckFrequency: Int = 100 // Check every 30 frames
+    private let environmentChangeThreshold: Float = 0.5 // 30% change triggers recalibration prompt
     
     // Publishers to receive updates from AR controller
     let metricsPublisher = PassthroughSubject<ReflectivityMetrics, Never>()
